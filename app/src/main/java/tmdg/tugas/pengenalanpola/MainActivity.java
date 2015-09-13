@@ -281,24 +281,6 @@ public class MainActivity extends ActionBarActivity {
         return levels;
     }
 
-    public int[][] CalculateYHist(Bitmap img) {
-        int pixel;
-        int levels[][] = new int[3][256];
-
-
-
-        for (int i = 0; i < img.getWidth(); i++) {
-            for (int j = 0; j < img.getHeight(); j++) {
-                pixel = img.getPixel(i, j);
-                levels[0][Color.red(pixel)]++;
-                levels[1][Color.green(pixel)]++;
-                levels[2][Color.blue(pixel)]++;
-            }
-        }
-
-        return levels;
-    }
-
     private void equalizeHist(){
         Intent i = new Intent(MainActivity.this, HistogramEqActivity.class);
         i.putExtra("target_img", targetImgPath);
