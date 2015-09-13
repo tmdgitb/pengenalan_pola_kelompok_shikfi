@@ -6,11 +6,14 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+
+import java.io.File;
 
 
 public class GammaCorrActivity extends ActionBarActivity implements SeekBar.OnSeekBarChangeListener {
@@ -31,6 +34,17 @@ public class GammaCorrActivity extends ActionBarActivity implements SeekBar.OnSe
         Bitmap orgImg;
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
+        Log.v("image_path_2", intent.getStringExtra("target_img"));
+
+
+        File f = new File(intent.getStringExtra("target_img"));
+        if (f.exists()) {
+            Log.d("exist", "exist");
+        }else{
+            Log.d("exist", "not exist");
+        }
+
+
         BitmapFactory.decodeFile(intent.getStringExtra("target_img"), options);
         final int REQUIRED_SIZE = 200;
         int scale = 1;

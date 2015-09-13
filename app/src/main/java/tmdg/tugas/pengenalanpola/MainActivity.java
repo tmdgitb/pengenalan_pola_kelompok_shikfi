@@ -142,10 +142,16 @@ public class MainActivity extends ActionBarActivity {
     private void onCaptureImageResult(Intent data) {
         Bitmap thumbnail = (Bitmap) data.getExtras().get("data");
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-//        thumbnail.compress(Bitmap.CompressFormat.JPEG, 90, bytes);
+        thumbnail.compress(Bitmap.CompressFormat.PNG, 100, bytes);
 
-        File destination = new File(Environment.getExternalStorageDirectory(),
-                System.currentTimeMillis() + ".bmp");
+        File imageFolder = new File(Environment.getExternalStorageDirectory(), "PatternPic");
+
+        if(!imageFolder.exists()){
+            imageFolder.mkdir();
+        }
+
+        File destination = new File(imageFolder,
+                System.currentTimeMillis() + ".png");
 
         FileOutputStream fo;
         try {
@@ -159,8 +165,9 @@ public class MainActivity extends ActionBarActivity {
             e.printStackTrace();
         }
 
-        Log.v("image_path", destination.getAbsolutePath());
+
         targetImgPath = destination.getAbsolutePath();
+        Log.v("image_path", targetImgPath);
 
         ivImage.setImageBitmap(thumbnail);
 
