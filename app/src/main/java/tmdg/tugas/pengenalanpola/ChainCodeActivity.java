@@ -7,19 +7,21 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
+
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -27,16 +29,19 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-public class ChainCodeActivity extends AppCompatActivity {
+public class ChainCodeActivity extends ActionBarActivity {
     int REQUEST_CAMERA = 0, SELECT_FILE = 1;
     String targetImgPath;
     Histogram histo;
+    ChainCode chaincode;
+    TextView chaincodeView1, chaincodeView2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chain_code);
-        histo = new Histogram();
+//        histo = new Histogram();
+        chaincode = new ChainCode();
         Button btnSelectImage = (Button) findViewById(R.id.btnSelectImage);
         btnSelectImage.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -44,6 +49,9 @@ public class ChainCodeActivity extends AppCompatActivity {
                 selectImage();
             }
         });
+
+        chaincodeView1 = (TextView) findViewById(R.id.chaincodeView);
+        chaincodeView2 = (TextView) findViewById(R.id.chaincode2View);
     }
 
     private void selectImage() {
@@ -113,7 +121,11 @@ public class ChainCodeActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        histo.createHistogram(thumbnail);
+//        histo.createHistogram(thumbnail);
+//        drawHistogram();
+        chaincode.findObject(thumbnail);
+        displayChaincode();
+
         //targetImgPath = destination.getAbsolutePath();
     }
 
@@ -133,7 +145,7 @@ public class ChainCodeActivity extends AppCompatActivity {
 
         Bitmap bm;
         BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+
         options.inJustDecodeBounds = true;
 //        BitmapFactory.decodeFile(selectedImagePath, options);
         final int REQUIRED_SIZE = 200;
@@ -143,9 +155,24 @@ public class ChainCodeActivity extends AppCompatActivity {
             scale *= 2;
         options.inSampleSize = scale;
         options.inJustDecodeBounds = false;
+        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
         bm = BitmapFactory.decodeFile(selectedImagePath, options);
 
-        histo.createHistogram(bm);
+//        histo.createHistogram(bm);
+//        drawHistogram();
+        chaincode.findObject(bm);
+        displayChaincode();
+    }
+
+    private void drawHistogram(){
+        for (int i=0; i < histo.rImage.length; i++){
+            Log.v("histogram", "("+i+") - R:"+histo.rImage[i]+" G:"+histo.gImage[i]+" B"+histo.bImage[i]);
+        }
+    }
+
+    private void displayChaincode(){
+        chaincodeView1.setText(chaincode.chaincodeOut[0]);
+        chaincodeView2.setText(chaincode.chaincodeOut[1]);
     }
 
 
@@ -171,5 +198,28 @@ public class ChainCodeActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                {
+                    Log.i("OpenCV", "OpenCV loaded successfully");
+                } break;
+                default:
+                {
+                    super.onManagerConnected(status);
+                } break;
+            }
+        }
+    };
+
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_6, this, mLoaderCallback);
     }
 }

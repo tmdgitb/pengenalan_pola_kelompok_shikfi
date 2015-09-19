@@ -11,13 +11,13 @@ import org.opencv.core.Mat;
  */
 public class Histogram {
     public int jumlahWarna;
-    public int[] rImage, gImage, bImage, grayScaleImage;
+    public int rImage[], gImage[], bImage[], grayScaleImage[];
 
     public void createHistogram(Bitmap bmp){
         final Mat imgMat = new Mat();
         Utils.bitmapToMat(bmp, imgMat);
 
-        byte[] imagByte=new byte[3];
+        byte[] imagByte=new byte[4];
         imgMat.get(0, 0, imagByte);
         Log.v("imageByte", "Image {" + imagByte + "}");
 
@@ -41,7 +41,7 @@ public class Histogram {
                 int g = byteToUnsignedInt(imagByte[1]);
                 int r = byteToUnsignedInt(imagByte[2]);
 
-                Log.v("jml_warna", "Jumlah Warna R{"+r+"} G{"+g+"} B {"+b+"}");
+
 
                 if (!colorCounts[r][g][b])
                 {
