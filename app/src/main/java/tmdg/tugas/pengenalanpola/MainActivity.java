@@ -41,255 +41,33 @@ import java.util.Set;
 
 public class MainActivity extends ActionBarActivity {
 
-    int REQUEST_CAMERA = 0, SELECT_FILE = 1;
-    Button btnSelect, btnEq, btnGamma;
-    ImageView ivImage;
-    LineChart chart;
-    Set<Integer> colors;
-    TextView colorCount;
-    String targetImgPath;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        btnSelect = (Button) findViewById(R.id.btnSelectPhoto);
-        btnSelect.setOnClickListener(new OnClickListener() {
-
+        Button btnRootMenu1 = (Button) findViewById(R.id.btnRootMenu1);
+        btnRootMenu1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                selectImage();
+                rootMenu1();
             }
         });
-        btnEq = (Button) findViewById(R.id.btnEq);
-        btnEq.setOnClickListener(new OnClickListener() {
-
+        Button btnRootMenu2 = (Button) findViewById(R.id.btnRootMenu2);
+        btnRootMenu2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                equalizeHist();
+                rootMenu2();
             }
         });
-        btnEq.setEnabled(false);
-        btnGamma = (Button) findViewById(R.id.btnGamma);
-        btnGamma.setOnClickListener(new OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                correctGamma();
-            }
-        });
-        btnGamma.setEnabled(false);
-
-        ivImage = (ImageView) findViewById(R.id.ivImage);
-        colorCount = (TextView) findViewById(R.id.colorCount);
-
-        chart = (LineChart) findViewById(R.id.chart);
-        chart.setDescription("");
-        chart.setNoDataTextDescription("No Picture at the moment");
-        chart.setHighlightEnabled(true);
-        chart.setTouchEnabled(true);
-        chart.setDragEnabled(true);
-        chart.setScaleEnabled(true);
-        chart.setDrawGridBackground(false);
-        chart.setPinchZoom(true);
-//        chart.setBackgroundColor(Color.LTGRAY);
-
     }
 
-    private void selectImage() {
-        final CharSequence[] items = { "Take Photo", "Choose from Library",
-                "Cancel" };
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-        builder.setTitle("Add Photo!");
-        builder.setItems(items, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int item) {
-                if (items[item].equals("Take Photo")) {
-                    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                    startActivityForResult(intent, REQUEST_CAMERA);
-                } else if (items[item].equals("Choose from Library")) {
-                    Intent intent = new Intent(
-                            Intent.ACTION_PICK,
-                            android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                    intent.setType("image/*");
-                    startActivityForResult(
-                            Intent.createChooser(intent, "Select File"),
-                            SELECT_FILE);
-                } else if (items[item].equals("Cancel")) {
-                    dialog.dismiss();
-                }
-            }
-        });
-        builder.show();
-
-        btnEq.setEnabled(true);
-        btnGamma.setEnabled(true);
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (resultCode == Activity.RESULT_OK) {
-            if (requestCode == SELECT_FILE)
-                onSelectFromGalleryResult(data);
-            else if (requestCode == REQUEST_CAMERA)
-                onCaptureImageResult(data);
-        }
-    }
-
-    private void onCaptureImageResult(Intent data) {
-        Bitmap thumbnail = (Bitmap) data.getExtras().get("data");
-        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        thumbnail.compress(Bitmap.CompressFormat.PNG, 100, bytes);
-
-        File imageFolder = new File(Environment.getExternalStorageDirectory(), "PatternPic");
-
-        if(!imageFolder.exists()){
-            imageFolder.mkdir();
-        }
-
-        File destination = new File(imageFolder,
-                System.currentTimeMillis() + ".png");
-
-        FileOutputStream fo;
-        try {
-            destination.createNewFile();
-            fo = new FileOutputStream(destination);
-            fo.write(bytes.toByteArray());
-            fo.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-        targetImgPath = destination.getAbsolutePath();
-        Log.v("image_path", targetImgPath);
-
-        ivImage.setImageBitmap(thumbnail);
-
-        MakeHist(thumbnail);
-    }
-
-    @SuppressWarnings("deprecation")
-    private void onSelectFromGalleryResult(Intent data) {
-        Uri selectedImageUri = data.getData();
-        String[] projection = { MediaColumns.DATA };
-        Cursor cursor = managedQuery(selectedImageUri, projection, null, null,
-                null);
-        int column_index = cursor.getColumnIndexOrThrow(MediaColumns.DATA);
-        cursor.moveToFirst();
-
-        String selectedImagePath = cursor.getString(column_index);
-
-        Log.v("image_path", selectedImagePath);
-        targetImgPath = selectedImagePath;
-
-        Bitmap bm;
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(selectedImagePath, options);
-        final int REQUIRED_SIZE = 200;
-        int scale = 1;
-        while (options.outWidth / scale / 2 >= REQUIRED_SIZE
-                && options.outHeight / scale / 2 >= REQUIRED_SIZE)
-            scale *= 2;
-        options.inSampleSize = scale;
-        options.inJustDecodeBounds = false;
-        bm = BitmapFactory.decodeFile(selectedImagePath, options);
-
-        ivImage.setImageBitmap(bm);
-
-        MakeHist(bm);
-    }
-
-    public void MakeHist(Bitmap img){
-        int levels[][] = CalculateHist(img);
-
-        colorCount.setText("There are " + colors.size() + " colors");
-
-        for(int i=0; i < levels[0].length; i++){
-            Log.v("Hist", "R, G, B: " + levels[0][i] + ", " + levels[1][i] + ", " + levels[2][i] + " - " + i);
-        }
-
-        ArrayList<String> xVals   = new ArrayList<String>();
-        ArrayList<Entry> redVal   = new ArrayList<Entry>();
-        ArrayList<Entry> greenVal = new ArrayList<Entry>();
-        ArrayList<Entry> blueVal  = new ArrayList<Entry>();
-
-        for(int i = 0; i < levels[0].length; i++){
-            xVals.add((i) + "");
-            redVal.add(new Entry(levels[0][i], i));
-            greenVal.add(new Entry(levels[1][i], i));
-            blueVal.add(new Entry(levels[2][i], i));
-        }
-
-        LineDataSet redSet = new LineDataSet(redVal, "Red");
-        redSet.setAxisDependency(AxisDependency.LEFT);
-        redSet.setColor(Color.RED);
-        redSet.setDrawCircles(false);
-        redSet.setLineWidth(1f);
-        redSet.setDrawCircleHole(false);
-
-        LineDataSet greenSet = new LineDataSet(greenVal, "Green");
-        greenSet.setAxisDependency(AxisDependency.LEFT);
-        greenSet.setColor(Color.GREEN);
-        greenSet.setDrawCircles(false);
-        greenSet.setLineWidth(1f);
-        greenSet.setDrawCircleHole(false);
-
-        LineDataSet blueSet = new LineDataSet(blueVal, "Blue");
-        blueSet.setAxisDependency(AxisDependency.LEFT);
-        blueSet.setColor(Color.BLUE);
-        blueSet.setDrawCircles(false);
-        blueSet.setLineWidth(1f);
-        blueSet.setDrawCircleHole(false);
-
-        ArrayList<LineDataSet> dataSets = new ArrayList<LineDataSet>();
-        dataSets.add(redSet);
-        dataSets.add(greenSet);
-        dataSets.add(blueSet);
-
-        LineData data = new LineData(xVals, dataSets);
-        data.setValueTextColor(Color.WHITE);
-        data.setValueTextSize(9f);
-
-        // set data
-        chart.setData(data);
-//        img.recycle();
-    }
-
-    public int[][] CalculateHist(Bitmap img) {
-        int pixel;
-        int levels[][] = new int[3][256];
-
-        colors = new HashSet<>();
-
-        for (int i = 0; i < img.getWidth(); i++) {
-            for (int j = 0; j < img.getHeight(); j++) {
-                pixel = img.getPixel(i, j);
-                colors.add(pixel);
-                levels[0][Color.red(pixel)]++;
-                levels[1][Color.green(pixel)]++;
-                levels[2][Color.blue(pixel)]++;
-            }
-        }
-
-        return levels;
-    }
-
-    private void equalizeHist(){
-        Intent i = new Intent(MainActivity.this, HistogramEqActivity.class);
-        i.putExtra("target_img", targetImgPath);
+    private void rootMenu1(){
+        Intent i = new Intent(MainActivity.this, HistogramPreprocessActivity.class);
         startActivity(i);
     }
 
-    private void correctGamma(){
-        Intent i = new Intent(MainActivity.this, GammaCorrActivity.class);
-        i.putExtra("target_img", targetImgPath);
+    private void rootMenu2(){
+        Intent i = new Intent(MainActivity.this, ChainCodeActivity.class);
         startActivity(i);
     }
 

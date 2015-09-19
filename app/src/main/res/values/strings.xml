@@ -6,5 +6,7 @@
     <string name="action_settings">Settings</string>
     <string name="title_activity_histogram_eq">HistogramEqActivity</string>
     <string name="title_activity_gamma_corr">GammaCorrActivity</string>
+    <string name="title_activity_histogram_preprocess">HistogramPreprocess</string>
+    <string name="title_activity_chain_code">ChainCodeActivity</string>
 
 </resources>
