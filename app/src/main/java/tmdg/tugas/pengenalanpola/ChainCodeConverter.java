@@ -51,11 +51,11 @@ public class ChainCodeConverter {
                         minHor = x;
                         maxHor = x;
                         String chaincode = prosesChaincode(y, x, 3, imgMat, 0);
-                        charDef.setChainCode(chaincode);
+
                         Log.v("chaincode_object", "Chaincode object #" + objectIdx + " at ("+ x +", "+ y +"): " + chaincode);
 
                         if (chaincode.length() > 20) {
-
+                            charDef.setChainCode(chaincode);
                             objectIdx++;
                             subObject(imgMat);
                         }
