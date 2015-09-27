@@ -4,12 +4,14 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -22,26 +24,35 @@ import android.widget.TextView;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.core.Core;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ChainCodeActivity extends ActionBarActivity {
     int REQUEST_CAMERA = 0, SELECT_FILE = 1;
     String targetImgPath;
     Histogram histo;
-    ChainCode chaincode;
+    ChainCodeConverter chaincode;
     TextView chaincodeView1, chaincodeView2;
+
+    int fontFace = Core.FONT_HERSHEY_PLAIN;
+    double fontScale = 20;
+    int thickness = 10;
+    int[] baseline = {0};
+    List<CharDef> charDefs = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chain_code);
 //        histo = new Histogram();
-        chaincode = new ChainCode();
+//        chaincode = new ChainCode();
         Button btnSelectImage = (Button) findViewById(R.id.btnSelectImage);
         btnSelectImage.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -52,6 +63,16 @@ public class ChainCodeActivity extends ActionBarActivity {
 
         chaincodeView1 = (TextView) findViewById(R.id.chaincodeView);
         chaincodeView2 = (TextView) findViewById(R.id.chaincode2View);
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        if(!prefs.getBoolean("firstTime", false)) {
+            // run your one time code
+//            createAZ();
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putBoolean("firstTime", true);
+            editor.commit();
+        }
+
     }
 
     private void selectImage() {
@@ -123,7 +144,8 @@ public class ChainCodeActivity extends ActionBarActivity {
 
 //        histo.createHistogram(thumbnail);
 //        drawHistogram();
-        chaincode.findObject(thumbnail);
+        chaincode = new ChainCodeConverter(thumbnail, "");
+        chaincode.getChainCode();
         displayChaincode();
 
         //targetImgPath = destination.getAbsolutePath();
@@ -160,7 +182,9 @@ public class ChainCodeActivity extends ActionBarActivity {
 
 //        histo.createHistogram(bm);
 //        drawHistogram();
-        chaincode.findObject(bm);
+//        chaincode.findObject(bm);
+        chaincode = new ChainCodeConverter(bm, "");
+        chaincode.getChainCode();
         displayChaincode();
     }
 
@@ -171,9 +195,48 @@ public class ChainCodeActivity extends ActionBarActivity {
     }
 
     private void displayChaincode(){
-        chaincodeView1.setText(chaincode.chaincodeOut[0]);
-        chaincodeView2.setText(chaincode.chaincodeOut[1]);
+        chaincode.charDef.calcDirChainCode();
+        chaincode.charDef.calcRelChainCode();
+        chaincodeView1.setText(chaincode.charDef.getChainCode());
+        chaincodeView2.setText("Dir & Rel: " + chaincode.charDef.getDirChainCode() + ", " + chaincode.charDef.getRelChainCode());
     }
+
+
+//    private void createAZ(){
+//        for (char ch=33; ch<=126;ch++)
+//        {
+//            if (ch == '!' || ch == '"' || ch == '%' || ch == ':' || ch == ';' || ch == '=' || ch == '?') { // skip multi-chaincode for now
+//                continue;
+//            }
+//
+//            try{
+//                if(ch==106)
+//                {
+//                    int i=0;
+//                }
+//                System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
+//
+//                Size textsize = Core.getTextSize(String.valueOf(ch), fontFace, fontScale, thickness, baseline);
+//                int heightImg=(int)textsize.height;
+//                int widthImg=(int)textsize.width;
+//                Mat source = new Mat(heightImg*2,widthImg*2, CvType.CV_8UC1, new Scalar(250));
+//                Core.putText(source, String.valueOf(ch), new Point(20, heightImg + (heightImg / 2)), fontFace, fontScale, new Scalar(0), thickness);
+//                final String filename = "character/" + String.valueOf(ch) + ".png";
+//                Imgcodecs.imwrite(filename, source);
+//
+//                prosesChainCode(source, String.valueOf(ch));
+//            } catch (Exception e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//    }
+
+//    private void prosesChainCode(Mat img,String msg)
+//    {
+//        ChainCodeConverter chainCodeConverter = new ChainCodeConverter(img,msg);
+//        charDefs.add(chainCodeConverter.getChainCode());
+//    }
+
 
 
 
