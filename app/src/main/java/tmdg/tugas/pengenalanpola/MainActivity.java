@@ -59,6 +59,14 @@ public class MainActivity extends ActionBarActivity {
                 rootMenu2();
             }
         });
+
+        Button btnRootMenu3 = (Button) findViewById(R.id.btnRootMenu3);
+        btnRootMenu3.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                rootMenu3();
+            }
+        });
     }
 
     private void rootMenu1(){
@@ -68,6 +76,11 @@ public class MainActivity extends ActionBarActivity {
 
     private void rootMenu2(){
         Intent i = new Intent(MainActivity.this, ChainCodeActivity.class);
+        startActivity(i);
+    }
+
+    private void rootMenu3(){
+        Intent i = new Intent(MainActivity.this, PlatNoActivity.class);
         startActivity(i);
     }
 

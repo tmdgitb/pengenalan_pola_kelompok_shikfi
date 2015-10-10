@@ -8,5 +8,8 @@
     <string name="title_activity_gamma_corr">GammaCorrActivity</string>
     <string name="title_activity_histogram_preprocess">HistogramPreprocess</string>
     <string name="title_activity_chain_code">ChainCodeActivity</string>
+    <string name="title_activity_plat_no">PlatNoActivity</string>
+    <string name="title_activity_blank_get_image">blankGetImageActivity</string>
+    <string name="title_activity_thinning">ThinningActivity</string>
 
 </resources>

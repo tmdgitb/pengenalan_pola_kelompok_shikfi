@@ -45,6 +45,22 @@
             android:name=".ChainCodeActivity"
             android:label="@string/title_activity_chain_code" >
         </activity>
+        <activity
+            android:name=".PlatNoActivity"
+            android:label="@string/title_activity_plat_no" >
+        </activity>
+        <activity
+            android:name=".blankGetImageActivity"
+            android:label="@string/title_activity_blank_get_image" >
+        </activity>
+        <activity
+            android:name=".ThinningActivity"
+            android:label="@string/title_activity_thinning"
+            android:parentActivityName=".blankGetImageActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="tmdg.tugas.pengenalanpola.blankGetImageActivity" />
+        </activity>
     </application>
 
 </manifest>

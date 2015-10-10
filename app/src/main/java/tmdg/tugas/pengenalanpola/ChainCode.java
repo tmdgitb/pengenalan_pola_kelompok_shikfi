@@ -11,7 +11,7 @@ import org.opencv.core.Mat;
  */
 public class ChainCode {
     private boolean flag [][];
-    private int toleransi=10,toleransiWhite=230;
+    private int toleransi=10,toleransiWhite=100;
     private boolean searchObject=true,searchSubObject=false;
     public String chaincodeOut[];
 
@@ -30,7 +30,7 @@ public class ChainCode {
 
         for (int i=0;i<imgMat.rows();i++)
         {
-            Mat scanline = imgMat.row(i);;
+            Mat scanline = imgMat.row(i);
             for(int j=0;j<imgMat.cols();j++)
             {
                 scanline.get(0,j,imagByte);

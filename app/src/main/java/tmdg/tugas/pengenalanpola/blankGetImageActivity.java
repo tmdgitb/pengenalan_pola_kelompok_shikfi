@@ -4,55 +4,41 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.Bundle;
 import android.os.Environment;
-import android.preference.PreferenceManager;
 import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
+import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.core.Core;
+import org.opencv.android.Utils;
+import org.opencv.core.Mat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
-public class ChainCodeActivity extends ActionBarActivity {
+public class blankGetImageActivity extends ActionBarActivity {
     int REQUEST_CAMERA = 0, SELECT_FILE = 1;
-    String targetImgPath;
-    Histogram histo;
-    ChainCodeConverter chaincode;
-    TextView chaincodeView1, chaincodeView2;
-
-    int fontFace = Core.FONT_HERSHEY_PLAIN;
-    double fontScale = 20;
-    int thickness = 10;
-    int[] baseline = {0};
-    List<CharDef> charDefs = new ArrayList<>();
+    protected Mat imgMat;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_chain_code);
-//        histo = new Histogram();
-//        chaincode = new ChainCode();
+        setContentView(R.layout.activity_blank_get_image);
+
         Button btnSelectImage = (Button) findViewById(R.id.btnSelectImage);
         btnSelectImage.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -60,26 +46,20 @@ public class ChainCodeActivity extends ActionBarActivity {
                 selectImage();
             }
         });
-
-        chaincodeView1 = (TextView) findViewById(R.id.chaincodeView);
-        chaincodeView2 = (TextView) findViewById(R.id.chaincode2View);
-
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-        if(!prefs.getBoolean("firstTime", false)) {
-            // run your one time code
-//            createAZ();
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.putBoolean("firstTime", true);
-            editor.commit();
-        }
-
     }
 
-    private void selectImage() {
+
+
+    // ============================================================
+    // Select Image from button click
+    // ============================================================
+
+    // Called on button click
+    protected void selectImage() {
         final CharSequence[] items = { "Take Photo", "Choose from Library",
                 "Cancel" };
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(ChainCodeActivity.this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Add Photo!");
         builder.setItems(items, new DialogInterface.OnClickListener() {
             @Override
@@ -103,6 +83,7 @@ public class ChainCodeActivity extends ActionBarActivity {
         builder.show();
     }
 
+    // Called as result of alert dialog selection
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -115,12 +96,19 @@ public class ChainCodeActivity extends ActionBarActivity {
         }
     }
 
-    private void onCaptureImageResult(Intent data) {
+    // Capture CAMERA Result
+    protected void onCaptureImageResult(Intent data) {
+        // get bitmap data from camera
         Bitmap cameraBmp = (Bitmap) data.getExtras().get("data");
         Bitmap thumbnail = cameraBmp.copy(Bitmap.Config.ARGB_8888, false);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         thumbnail.compress(Bitmap.CompressFormat.PNG, 100, bytes);
 
+        // Convert result to Mat
+        resultToMat(thumbnail);
+
+
+        // Save the camera result (optional)
         File imageFolder = new File(Environment.getExternalStorageDirectory(), "PatternPic");
 
         if(!imageFolder.exists()){
@@ -141,18 +129,11 @@ public class ChainCodeActivity extends ActionBarActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-//        histo.createHistogram(thumbnail);
-//        drawHistogram();
-        chaincode = new ChainCodeConverter(thumbnail, "");
-        chaincode.getChainCode();
-        displayChaincode();
-
-        //targetImgPath = destination.getAbsolutePath();
     }
 
+    // Capture gallery selection result
     @SuppressWarnings("deprecation")
-    private void onSelectFromGalleryResult(Intent data) {
+    protected void onSelectFromGalleryResult(Intent data) {
         Uri selectedImageUri = data.getData();
         String[] projection = { MediaStore.MediaColumns.DATA };
         Cursor cursor = managedQuery(selectedImageUri, projection, null, null,
@@ -169,7 +150,7 @@ public class ChainCodeActivity extends ActionBarActivity {
         BitmapFactory.Options options = new BitmapFactory.Options();
 
         options.inJustDecodeBounds = true;
-//        BitmapFactory.decodeFile(selectedImagePath, options);
+        BitmapFactory.decodeFile(selectedImagePath, options);
         final int REQUIRED_SIZE = 200;
         int scale = 1;
         while (options.outWidth / scale / 2 >= REQUIRED_SIZE
@@ -180,73 +161,88 @@ public class ChainCodeActivity extends ActionBarActivity {
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
         bm = BitmapFactory.decodeFile(selectedImagePath, options);
 
-//        histo.createHistogram(bm);
-//        drawHistogram();
-//        chaincode.findObject(bm);
-        chaincode = new ChainCodeConverter(bm, "");
-        chaincode.getChainCode();
-        displayChaincode();
+        resultToMat(bm);
     }
 
-    private void drawHistogram(){
-        for (int i=0; i < histo.rImage.length; i++){
-            Log.v("histogram", "("+i+") - R:"+histo.rImage[i]+" G:"+histo.gImage[i]+" B"+histo.bImage[i]);
+
+
+
+    // ============================================================
+    // Convert image result to OpenCV Mat
+    // ============================================================
+
+    protected void resultToMat(Bitmap bitmap){
+        imgMat = new Mat();
+        Utils.bitmapToMat(bitmap, imgMat);
+        callProcessing();
+    }
+
+
+    protected void callProcessing(){
+
+    }
+
+
+
+
+    protected final int grayScale(byte[] imagByte)
+    {
+        int b = byteToUnsignedInt(imagByte[0]);
+        int g = byteToUnsignedInt( imagByte[1]);
+        int r = byteToUnsignedInt(imagByte[2]);
+        return   Math.round((r + g + b) / 3f);
+    }
+
+
+    protected final static int byteToUnsignedInt(byte b) {
+        return 0x00 << 24 | b & 0xff;
+    }
+
+
+
+
+    // ============================================================
+    // OpenCV load library
+    // ============================================================
+
+    protected BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                {
+                    Log.i("OpenCV_loading", "OpenCV loaded successfully");
+                } break;
+                default:
+                {
+                    Log.i("OpenCV_loading", "OpenCV loading error");
+                    super.onManagerConnected(status);
+                } break;
+            }
         }
+    };
+
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
     }
 
-    private void displayChaincode(){
-        chaincode.charDef.calcDirChainCode();
-        chaincode.charDef.calcRelChainCode();
-        chaincodeView1.setText(chaincode.charDef.getChainCode());
-        chaincodeView2.setText("Dir & Rel: " + chaincode.charDef.getDirChainCode() + ", " + chaincode.charDef.getRelChainCode());
-    }
-
-
-//    private void createAZ(){
-//        for (char ch=33; ch<=126;ch++)
-//        {
-//            if (ch == '!' || ch == '"' || ch == '%' || ch == ':' || ch == ';' || ch == '=' || ch == '?') { // skip multi-chaincode for now
-//                continue;
-//            }
-//
-//            try{
-//                if(ch==106)
-//                {
-//                    int i=0;
-//                }
-//                System.loadLibrary( Core.NATIVE_LIBRARY_NAME );
-//
-//                Size textsize = Core.getTextSize(String.valueOf(ch), fontFace, fontScale, thickness, baseline);
-//                int heightImg=(int)textsize.height;
-//                int widthImg=(int)textsize.width;
-//                Mat source = new Mat(heightImg*2,widthImg*2, CvType.CV_8UC1, new Scalar(250));
-//                Core.putText(source, String.valueOf(ch), new Point(20, heightImg + (heightImg / 2)), fontFace, fontScale, new Scalar(0), thickness);
-//                final String filename = "character/" + String.valueOf(ch) + ".png";
-//                Imgcodecs.imwrite(filename, source);
-//
-//                prosesChainCode(source, String.valueOf(ch));
-//            } catch (Exception e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-//    }
-
-//    private void prosesChainCode(Mat img,String msg)
-//    {
-//        ChainCodeConverter chainCodeConverter = new ChainCodeConverter(img,msg);
-//        charDefs.add(chainCodeConverter.getChainCode());
-//    }
 
 
 
-
+    // ============================================================
+    // ActionBarActivity Override
+    // ============================================================
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_chain_code, menu);
+        getMenuInflater().inflate(R.menu.menu_blank_get_image, menu);
         return true;
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -261,29 +257,5 @@ public class ChainCodeActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
-        @Override
-        public void onManagerConnected(int status) {
-            switch (status) {
-                case LoaderCallbackInterface.SUCCESS:
-                {
-                    Log.i("OpenCV", "OpenCV loaded successfully");
-                } break;
-                default:
-                {
-                    Log.i("OpenCV", "OpenCV loading error");
-                    super.onManagerConnected(status);
-                } break;
-            }
-        }
-    };
-
-    @Override
-    public void onResume()
-    {
-        super.onResume();
-        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
     }
 }
